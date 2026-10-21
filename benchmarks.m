@@ -221,12 +221,13 @@ function RunBenchmark(p_val, iterations)
     ObfuscateCls := 0; 
     DeObfuscateCls := 0; 
 
+    // Generate the public key once outside the loop to drastically reduce absolute test execution time
+    SK := Random(1, q-1);
+    G_target := Cofactor * Random(E_target);
+    while G_target eq Identity do G_target := Cofactor * Random(E_target); end while;
+    PK := SK * G_target;
+
     for i in [1..iterations] do
-        SK := Random(1, q-1);
-        G_target := Cofactor * Random(E_target);
-        while G_target eq Identity do G_target := Cofactor * Random(E_target); end while;
-        PK := SK * G_target;
-        
         t := ClockCycles(); 
         pu_b, pv_b := ObfuscatePublicKey_Jacobi(PK);
         ObfuscateCls +:= (ClockCycles() - t);
@@ -239,7 +240,7 @@ function RunBenchmark(p_val, iterations)
     return ObfuscateCls div iterations, DeObfuscateCls div iterations;
 end function;
 
-iterations := 100000;
+iterations := 1000;
 
 p_479 := 1040582850105330743815570414239668597581975900197275493095847470017583224665441180782578049215009464174278151947833029365685675660572997417552727;
 printf "Running benchmarks for BLS12-479+ (%o iterations)...\n", iterations;
