@@ -139,8 +139,8 @@ function ScalarMulJqNAF_Prj(DummyPrj, d, a_2, Scalar, PrjPoint)
     
     for i := #ArrayNAF to 1 by -1 do
         if started then
-            // Возвращаем самую быструю функцию удвоения (3M+4S)!
-            // Она математически не зависит от параметра 'd'
+            // Bringing back the fastest doubling function (3M+4S)!
+            // It is mathematically independent of the parameter 'd'
             ResultPoint := DedicatedDblJq_Prj(DummyPrj, a_2, ResultPoint);
         end if;
         
