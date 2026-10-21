@@ -56,6 +56,16 @@ function RunBenchmark(p_val, iterations)
         return E_isog![num_u / den_u, num_v / den_v];
     end function;
 
+    DedicatedDblJq_Prj := function(Result, a_2, PrjPoint)
+        X_1:=PrjPoint[1]; Y_1:=PrjPoint[2]; Z_1:=PrjPoint[3];
+        A:=2*Z_1^2; B:=X_1^2; C:=Y_1^2; E:=2*X_1*Y_1; 
+        F:=a_2*B; G:=C-F; H:=A-G;
+        Result[3]:=H^2;
+        Result[1]:=E*H;
+        Result[2]:=2*C*G-Result[3];
+        return Result;
+    end function;
+/*
     UnifiedAddJq_Prj := function(Result, d, a_2, PrjPoint1, PrjPoint2)
         X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
         X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; Z_2:=PrjPoint2[3];
@@ -69,7 +79,7 @@ function RunBenchmark(p_val, iterations)
         Result[3]:=2*M;
         return Result;
     end function;
-
+*/
     NAF := function(Scalar)
         ArrayNAF := [];
         Tmp := Scalar;
@@ -87,6 +97,36 @@ function RunBenchmark(p_val, iterations)
         return ArrayNAF;
     end function;
 
+    function ScalarMulJqNAF_Prj(DummyPrj, d, a_2, Scalar, PrjPoint)
+    if Scalar eq 0 then return [Fp!0, Fp!1, Fp!1]; end if;
+    ArrayNAF := NAF(Scalar);
+    PrjPointNeg := [-PrjPoint[1], PrjPoint[2], PrjPoint[3]];
+    
+    ResultPoint := DummyPrj;
+    started := false;
+    
+    for i := #ArrayNAF to 1 by -1 do
+        if started then
+            // Bringing back the fastest doubling function (3M+4S)!
+            // It is mathematically independent of the parameter 'd'
+            ResultPoint := DedicatedDblJq_Prj(DummyPrj, a_2, ResultPoint);
+        end if;
+        
+        Val := ArrayNAF[i];
+        if Val ne 0 then
+            P_add := Val eq 1 select PrjPoint else PrjPointNeg;
+            if not started then
+                ResultPoint := P_add;
+                started := true;
+            else
+                ResultPoint := UnifiedAddJq_Prj(DummyPrj, d, a_2, ResultPoint, P_add);
+            end if;
+        end if;
+    end for;
+    return ResultPoint;
+end function;
+
+/*
     ScalarMulJqNAF_Prj := function(DummyPrj, d, a_2, Scalar, PrjPoint)
         if Scalar eq 0 then return [Fp!0, Fp!1, Fp!1]; end if;
         ArrayNAF := NAF(Scalar);
@@ -110,7 +150,7 @@ function RunBenchmark(p_val, iterations)
         end for;
         return ResultPoint;
     end function;
-
+*/
     Isogeny2Target := function(P_isog)
         if P_isog eq E_isog!0 then return Identity; end if;
         x := P_isog[1]; y := P_isog[2];
