@@ -87,7 +87,7 @@ function RunBenchmark(p_val, iterations)
         return Result;
     end function;
 
-    // Специлизированная функция с предвычисленными константами для точки 2
+    // Specialized function with precomputed constants for point 2
     UnifiedAddJq_Prj_Cached := function(Result, d, a_2_val, PrjPoint1, PrjPoint2, X2_plus_Y2, Z2_sqr, X2_sqr)
         X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
         X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; Z_2:=PrjPoint2[3];
@@ -122,7 +122,7 @@ function RunBenchmark(p_val, iterations)
         end while;
     end procedure;
 
-    // Генерация таблицы с использованием кэшированной функции
+    // Generating a table using a cache
     CreateLookUpTable_wNAF := function(DummyPrj, d, a_2_val, w, PrjPoint)
         Rise2_w := 2^w;
         Table := [];
