@@ -1,6 +1,6 @@
 # Optimizing Elligator Squared for BLS Curves via Jacobi Quartics
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23505994.svg)](https://doi.org/10.5281/zenodo.23505994)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23537349.svg)](https://doi.org/10.5281/zenodo.23537349)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This repository contains the Magma Computer Algebra System proof-of-concept implementation for the steganographic obfuscation of BLS12-family public keys. 
@@ -34,7 +34,7 @@ magma bls12_539_g1_jacobi.m
 ```
 ### 📚 Academic Citation
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23505994.svg)](https://doi.org/10.5281/zenodo.23505994)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23536594.svg)](https://doi.org/10.5281/zenodo.23536594)
 
 If you utilize these scripts or the BLS12-479+ curve parameters in your research,
 please cite the associated archive:
