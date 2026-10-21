@@ -1,7 +1,7 @@
 /* 
 ===========================================================================
 Standalone Benchmark Script for BLS12-479+ and BLS12-539+ Jacobi Pipelines 
-Features: Asymmetric wNAF, Explicit 2-Isogenies, Billet-Joye Fusion, Round-trip Verification
+Features: Asymmetric wNAF, Cached Table Generation, Round-trip Verification
 ===========================================================================
 */
 
@@ -29,10 +29,10 @@ function RunBenchmark(p_val, iterations)
     E_isog   := EllipticCurve([Fp | A_isog, B_isog]);
     Identity := E_target!0;
 
-    // Jacobi Quartic Constants (Strictly Aligned with Hisil Arithmetic)
-    theta := Fp!2; // 2-torsion point on E_isog
-    a_bj  := Fp!6; // Shifted curve parameter 'a'
-    b_bj  := Fp!-3; // Shifted curve parameter 'b'
+    // Jacobi Quartic Constants
+    theta := Fp!2;
+    a_bj  := Fp!6;
+    b_bj  := Fp!-3;
 
     a_1  := -a_bj / 4; 
     a_2  := 2 * a_1;   
@@ -40,7 +40,6 @@ function RunBenchmark(p_val, iterations)
 
     DummyPrj := [Fp!0, Fp!0, Fp!0];
 
-    // Birational Mappings: Exact Homogeneous Hişil Coordinates
     W2J := function(P)
         if P eq E_isog!0 then return [Fp!0, Fp!1, Fp!1]; end if;
         x := P[1]; y := P[2];
@@ -64,7 +63,6 @@ function RunBenchmark(p_val, iterations)
         return E_isog![num_u / den_u, num_v / den_v];
     end function;
 
-    // Jacobi Quartic Dedicated Doubling (3M+4S+1C+3add)
     DedicatedDblJq_Prj := function(Result, a_2_val, PrjPoint)
         X_1:=PrjPoint[1]; Y_1:=PrjPoint[2]; Z_1:=PrjPoint[3];
         A:=2*Z_1^2; B:=X_1^2; C:=Y_1^2; E:=2*X_1*Y_1; 
@@ -75,7 +73,6 @@ function RunBenchmark(p_val, iterations)
         return Result;
     end function;
 
-    // Jacobi Quartic Unified Addition (9M+7S+1C+15add)
     UnifiedAddJq_Prj := function(Result, d, a_2_val, PrjPoint1, PrjPoint2)
         X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
         X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; Z_2:=PrjPoint2[3];
@@ -90,7 +87,22 @@ function RunBenchmark(p_val, iterations)
         return Result;
     end function;
 
-    // Generate wNAF array
+    // Специлизированная функция с предвычисленными константами для точки 2
+    UnifiedAddJq_Prj_Cached := function(Result, d, a_2_val, PrjPoint1, PrjPoint2, X2_plus_Y2, Z2_sqr, X2_sqr)
+        X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
+        X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; Z_2:=PrjPoint2[3];
+        A:=Z_1*Z_2; B:=Y_1*Y_2; C:=X_1*X_2; 
+        D:=(X_1+Y_1)*X2_plus_Y2-B-C;
+        F:=X_1^2 * Z2_sqr; G:=Z_1^2 * X2_sqr; 
+        H:=A^2; J:=C^2; 
+        K:=d*J; 
+        L:=H-K; M:=L^2; N:=(A+L)^2-H-M; P:=(A+C)^2-H-J;
+        Result[1]:=D*N;
+        Result[2]:=2*A*(B+a_2_val*C)*(H+K)+2*d*P*(F+G); 
+        Result[3]:=2*M;
+        return Result;
+    end function;
+
     NAF_w := procedure(~ArrayNAF, Scalar, w)
         Rise2_w := 2^w; 
         Rise2_wP1 := 2^(w+1);
@@ -110,7 +122,7 @@ function RunBenchmark(p_val, iterations)
         end while;
     end procedure;
 
-    // Create lookup table for odd multiples
+    // Генерация таблицы с использованием кэшированной функции
     CreateLookUpTable_wNAF := function(DummyPrj, d, a_2_val, w, PrjPoint)
         Rise2_w := 2^w;
         Table := [];
@@ -119,13 +131,17 @@ function RunBenchmark(p_val, iterations)
         Table[1] := PrjPoint;
         P2 := DedicatedDblJq_Prj(DummyPrj, a_2_val, PrjPoint);
         
+        // Кэшируем константы
+        X2_plus_Y2 := P2[1] + P2[2];
+        Z2_sqr := P2[3]^2;
+        X2_sqr := P2[1]^2;
+        
         for i in [3 .. Rise2_w-1 by 2] do
-            Table[i] := UnifiedAddJq_Prj(DummyPrj, d, a_2_val, Table[i-2], P2);
+            Table[i] := UnifiedAddJq_Prj_Cached(DummyPrj, d, a_2_val, Table[i-2], P2, X2_plus_Y2, Z2_sqr, X2_sqr);
         end for;
         return Table;
     end function;
 
-    // Main wNAF scalar multiplication function
     ScalarMulJqwNAF_Prj := function(DummyPrj, d, a_2_val, w, Scalar, PrjPoint)
         if Scalar eq 0 then return [Fp!0, Fp!1, Fp!1]; end if;
         
@@ -138,7 +154,6 @@ function RunBenchmark(p_val, iterations)
         
         for i := #ArrayNAF to 1 by -1 do
             if started then
-                // Use ultra-fast dedicated doubling (3M+4S)
                 ResultPoint := DedicatedDblJq_Prj(DummyPrj, a_2_val, ResultPoint);
             end if;
             
@@ -156,7 +171,6 @@ function RunBenchmark(p_val, iterations)
         return ResultPoint;
     end function;
 
-    // Forward Map & Backward Map (2-Isogenies)
     Isogeny2Target := function(P_isog)
         if P_isog eq E_isog!0 then return Identity; end if;
         x := P_isog[1]; y := P_isog[2];
@@ -176,19 +190,15 @@ function RunBenchmark(p_val, iterations)
         return E_isog![X_hat, Y_hat];
     end function;
 
-    // Setup Scalars
     FastCofactor := Abs(z_val - 1);
-    L_val := 2;
     fc_mod_q := FastCofactor mod q;
-    ScalarFactor := (L_val * fc_mod_q) mod q;
+    ScalarFactor := (2 * fc_mod_q) mod q;
     InvScalar := Integers()!( (Integers(q)!ScalarFactor)^-1 );
     BlindScalar := q * (FastCofactor div 3); 
     
-    // wNAF window sizes (Asymmetric approach)
-    w_obf := 5;   // Wide window for heavy full-scalar blinding
-    w_deobf := 2; // Minimal window for lightweight Fast Cofactor Clearing
+    w_obf := 5;
+    w_deobf := 2;
 
-    // SENDER PIPELINE (OBFUSCATION) - JACOBI OPTIMIZED
     ObfuscatePublicKey_Jacobi := function(PublicKey_target)
         P_scaled := InvScalar * PublicKey_target;
         P_isog_base := EvaluateBackwardMap(P_scaled); 
@@ -206,7 +216,6 @@ function RunBenchmark(p_val, iterations)
         return P_u_isog, P_v_isog;
     end function;
 
-    // RECEIVER PIPELINE (DEOBFUSCATION) - JACOBI OPTIMIZED
     DeobfuscatePublicKey_Jacobi := function(P_u_isog, P_v_isog)
         P_u_J := W2J(P_u_isog);
         P_v_J := W2J(P_v_isog);
@@ -221,7 +230,6 @@ function RunBenchmark(p_val, iterations)
     ObfuscateCls := 0; 
     DeObfuscateCls := 0; 
 
-    // Generate the public key once outside the loop
     SK := Random(1, q-1);
     G_target := Cofactor * Random(E_target);
     while G_target eq Identity do G_target := Cofactor * Random(E_target); end while;
@@ -236,11 +244,8 @@ function RunBenchmark(p_val, iterations)
         PK_recovered := DeobfuscatePublicKey_Jacobi(pu_b, pv_b);
         DeObfuscateCls +:= (ClockCycles() - t);
         
-        // Strict Round-Trip Verification
         if PK_recovered ne PK then
             printf "\n[!] CRITICAL ERROR: Point verification failed at iteration %o!\n", i;
-            printf "Original PK: %o\n", PK;
-            printf "Recovered PK: %o\n", PK_recovered;
             quit;
         end if;
     end for;
