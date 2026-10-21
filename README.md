@@ -1,1 +1,1 @@
-# bls12_jacobi_obfuscation
+# bls12-steganography_jacobi
