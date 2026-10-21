@@ -240,7 +240,7 @@ function RunBenchmark(p_val, iterations)
     return ObfuscateCls div iterations, DeObfuscateCls div iterations;
 end function;
 
-iterations := 1000;
+iterations := 100000;
 
 p_479 := 1040582850105330743815570414239668597581975900197275493095847470017583224665441180782578049215009464174278151947833029365685675660572997417552727;
 printf "Running benchmarks for BLS12-479+ (%o iterations)...\n", iterations;
