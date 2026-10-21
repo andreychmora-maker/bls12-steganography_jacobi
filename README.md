@@ -1,3 +1,4 @@
+https://zenodo.org/badge/DOI/10.5281/zenodo.23505994.svg
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # Optimizing Elligator Squared for BLS Curves via Jacobi Quartics
@@ -30,3 +31,21 @@ magma benchmarks.m
 # Run the detailed pipeline tests
 magma bls12_479_g1_jacobi.m
 magma bls12_539_g1_jacobi.m
+```
+### 📚 Academic Citation
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19285755.svg)](https://doi.org/10.5281/zenodo.19285755)
+
+If you utilize these scripts or the BLS12-479+ curve parameters in your research,
+please cite the associated archive:
+
+```bash
+@misc{chmora2026bls12steganography,
+  author       = {Andrey Chmora},
+  title        = {Optimizing Elligator Squared for BLS Curves: A Jacobi Quartic Approach},
+  month        = {Oct},
+  year         = {2026},
+  publisher    = {Zenodo},
+  doi          = 10.5281/zenodo.23505994
+  url          = [https://zenodo.org/badge/DOI/10.5281/zenodo.23505994.svg](https://doi.org/10.5281/zenodo.23505994)
+```
