@@ -37,10 +37,10 @@ function RunBenchmark(p_val, iterations)
     a_2  := 2 * a_1;   
     d_jq := -(3*theta^2 + 4*a_bj) / 16; 
 
-    // ИСТИННЫЙ НЕЙТРАЛЬНЫЙ ЭЛЕМЕНТ В P(1,1,1)
+    // THE TRUE NEUTRAL ELEMENT IN P(1,1,1)
     DummyPrj := [Fp!0, Fp!1, Fp!0];
 
-    // Маппинги Billet-Joye для P(1,1,1)
+    // Billet-Joye mappings for P(1,1,1)
     W2J := function(P)
         if P eq E_isog!0 then return DummyPrj; end if;
         x := P[1]; y := P[2];
@@ -62,7 +62,7 @@ function RunBenchmark(p_val, iterations)
         return E_isog![num_u / den_u, num_v / den_v];
     end function;
 
-    // Формулы сложения Hişil P(1,1,1)
+    // Addition formulas for Hişil P(1,1,1)
     DedicatedDblJq_Prj := function(Result, d, a_2_val, PrjPoint)
         X_1:=PrjPoint[1]; Y_1:=PrjPoint[2]; Z_1:=PrjPoint[3];
         if Z_1 eq 0 then return Result; end if;
@@ -91,7 +91,7 @@ function RunBenchmark(p_val, iterations)
         return Result;
     end function;
 
-    // Оптимизированное сложение с интеграцией d!=1
+    // Optimized addition with integration of d!=1
     DedicatedAddJq_Prj := function(Result, d, a_2_val, PrjPoint1, PrjPoint2)
         X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
         X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; 
@@ -100,7 +100,7 @@ function RunBenchmark(p_val, iterations)
         A:=Z_1; B:=Y_1*Y_2; C:=X_1*X_2;
         D:=X_1*Y_2 - X_2*Y_1; F:=X_1^2; G:=(Z_1*X_2)^2;
         Result[1]:=D*(F-G);
-        Result[2]:=(B-a_2_val*C)*(F+G)-2*C*(A^2+d*C^2); // ЗДЕСЬ ДОБАВЛЕНО d*C^2
+        Result[2]:=(B-a_2_val*C)*(F+G)-2*C*(A^2+d*C^2); // d*C^2 ADDED HERE
         Result[3]:=A*D^2;
         return Result;
     end function;
@@ -134,7 +134,7 @@ function RunBenchmark(p_val, iterations)
             Table[i] := UnifiedAddJq_Prj(DummyPrj, d, a_2_val, Table[i-2], P2);
         end for;
 
-        // ПРЯМАЯ НОРМАЛИЗАЦИЯ (Z=1)
+        // DIRECT NORMALIZATION (Z=1)
         for i in [1 .. Rise2_w-1 by 2] do
             Zinv := Table[i][3]^-1;
             Table[i][1] := Table[i][1] * Zinv;
@@ -167,7 +167,7 @@ function RunBenchmark(p_val, iterations)
                     ResultPoint := P_add;
                     started := true;
                 else
-                    // Гарантированно работает, так как P_add имеет Z=1
+                    // Guaranteed to work, since P_add has Z=1
                     ResultPoint := DedicatedAddJq_Prj(DummyPrj, d, a_2_val, ResultPoint, P_add);
                 end if;
             end if;
