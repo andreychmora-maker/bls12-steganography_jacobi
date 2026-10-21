@@ -1,7 +1,7 @@
-https://zenodo.org/badge/DOI/10.5281/zenodo.23505994.svg
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 # Optimizing Elligator Squared for BLS Curves via Jacobi Quartics
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23505994.svg)](https://doi.org/10.5281/zenodo.23505994)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This repository contains the Magma Computer Algebra System proof-of-concept implementation for the steganographic obfuscation of BLS12-family public keys. 
 
