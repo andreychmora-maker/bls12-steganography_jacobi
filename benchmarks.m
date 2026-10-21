@@ -1,7 +1,7 @@
 /* 
 ===========================================================================
 Standalone Benchmark Script for BLS12-479+ and BLS12-539+ Jacobi Pipelines 
-Features: Asymmetric wNAF, Explicit 2-Isogenies, Billet-Joye Fusion
+Features: Asymmetric wNAF, Explicit 2-Isogenies, Billet-Joye Fusion, Round-trip Verification
 ===========================================================================
 */
 
@@ -221,7 +221,7 @@ function RunBenchmark(p_val, iterations)
     ObfuscateCls := 0; 
     DeObfuscateCls := 0; 
 
-    // Generate the public key once outside the loop to drastically reduce absolute test execution time
+    // Generate the public key once outside the loop
     SK := Random(1, q-1);
     G_target := Cofactor * Random(E_target);
     while G_target eq Identity do G_target := Cofactor * Random(E_target); end while;
@@ -233,8 +233,16 @@ function RunBenchmark(p_val, iterations)
         ObfuscateCls +:= (ClockCycles() - t);
 
         t := ClockCycles(); 
-        _ := DeobfuscatePublicKey_Jacobi(pu_b, pv_b);
+        PK_recovered := DeobfuscatePublicKey_Jacobi(pu_b, pv_b);
         DeObfuscateCls +:= (ClockCycles() - t);
+        
+        // Strict Round-Trip Verification
+        if PK_recovered ne PK then
+            printf "\n[!] CRITICAL ERROR: Point verification failed at iteration %o!\n", i;
+            printf "Original PK: %o\n", PK;
+            printf "Recovered PK: %o\n", PK_recovered;
+            quit;
+        end if;
     end for;
 
     return ObfuscateCls div iterations, DeObfuscateCls div iterations;
@@ -243,12 +251,12 @@ end function;
 iterations := 100000;
 
 p_479 := 1040582850105330743815570414239668597581975900197275493095847470017583224665441180782578049215009464174278151947833029365685675660572997417552727;
-printf "Running benchmarks for BLS12-479+ (%o iterations)...\n", iterations;
+printf "Running benchmarks and verifying correctness for BLS12-479+ (%o iterations)...\n", iterations;
 obf_479, deobf_479 := RunBenchmark(p_479, iterations);
 printf "BLS12-479+ -> Obfuscation: %o cycles | Deobfuscation: %o cycles\n\n", obf_479, deobf_479;
 
 p_539 := 1199710345211519035416219429741786876319311421933497483626991418658478319088544596915796254702839442454587420641007826572438113715342206999017869775578752368205297;
-printf "Running benchmarks for BLS12-539+ (%o iterations)...\n", iterations;
+printf "Running benchmarks and verifying correctness for BLS12-539+ (%o iterations)...\n", iterations;
 obf_539, deobf_539 := RunBenchmark(p_539, iterations);
 printf "BLS12-539+ -> Obfuscation: %o cycles | Deobfuscation: %o cycles\n", obf_539, deobf_539;
 
