@@ -60,31 +60,31 @@ function W2J(P)
     if y eq 0 and x eq theta then return [Fp!0, Fp!-1, Fp!1]; end if;
     
     x_shift := x - theta;
-    XJ := 2 * x_shift;
+    XJ := 2 * x_shift * y;
     YJ := x_shift * (x_shift^2 - b_bj);
-    ZJ := y;
+    ZJ := y^2;
     return [XJ, YJ, ZJ];
 end function;
 
 function J2W(PJ)
     XJ := PJ[1]; YJ := PJ[2]; ZJ := PJ[3];
     if ZJ eq 0 then return E_isog!0; end if;
-    if XJ eq 0 and YJ eq ZJ^2 then return E_isog!0; end if;
-    if XJ eq 0 and YJ eq -ZJ^2 then return E_isog![theta, 0]; end if;
+    if XJ eq 0 and YJ eq ZJ then return E_isog!0; end if;
+    if XJ eq 0 and YJ eq -ZJ then return E_isog![theta, 0]; end if;
 
-    // The shift +theta is mathematically pre-absorbed into num_x
-    num_x := 2*ZJ^2 + 2*YJ - XJ^2;
-    den_x := XJ^2;
-    num_y := 2*ZJ*(2*ZJ^2 + 2*YJ - 3*XJ^2);
-    den_y := XJ^3;
+    // THE FIX: Explicitly multiplying YJ by ZJ restores strict homogenization
+    num_u := 2*ZJ^2 + 2*YJ*ZJ - XJ^2;
+    den_u := XJ^2;
+    num_v := 2*ZJ*(2*ZJ^2 + 2*YJ*ZJ - 3*XJ^2);
+    den_v := XJ^3;
     
-    if den_x eq 0 or den_y eq 0 then return E_isog!0; end if;
-    return E_isog![num_x / den_x, num_y / den_y];
+    if den_u eq 0 or den_v eq 0 then return E_isog!0; end if;
+    return E_isog![num_u / den_u, num_v / den_v];
 end function;
 
 /*
 ----------------------------------------------------------------
-Jacobi Quartic Arithmetic Library
+Jacobi Quartic Arithmetic Library (Hisil)
 ----------------------------------------------------------------
 */
 function UnifiedAddJq_Prj(Result, d, a_2, PrjPoint1, PrjPoint2)
@@ -93,7 +93,7 @@ function UnifiedAddJq_Prj(Result, d, a_2, PrjPoint1, PrjPoint2)
     A:=Z_1*Z_2; B:=Y_1*Y_2; C:=X_1*X_2; 
     D:=(X_1+Y_1)*(X_2+Y_2)-B-C;
     F:=(X_1*Z_2)^2; G:=(Z_1*X_2)^2; H:=A^2; J:=C^2; 
-    K:=d*J; // Multiplier d is strictly active
+    K:=d*J; // Multiplier d is strictly active for BLS12-479+ (where d=3)
     L:=H-K; M:=L^2; N:=(A+L)^2-H-M; P:=(A+C)^2-H-J;
     Result[1]:=D*N;
     Result[2]:=2*A*(B+a_2*C)*(H+K)+2*d*P*(F+G); // Multiplier d is strictly active
@@ -128,7 +128,7 @@ function ScalarMulJqNAF_Prj(DummyPrj, d, a_2, Scalar, PrjPoint)
     
     for i := #ArrayNAF to 1 by -1 do
         if started then
-            // Utilizing UnifiedAdd for doubling securely handles d != 1
+            // Utilizing UnifiedAdd for doubling securely handles d=3
             ResultPoint := UnifiedAddJq_Prj(DummyPrj, d, a_2, ResultPoint, ResultPoint);
         end if;
         
