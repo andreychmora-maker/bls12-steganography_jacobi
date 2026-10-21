@@ -34,7 +34,7 @@ magma bls12_539_g1_jacobi.m
 ```
 ### 📚 Academic Citation
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19285755.svg)](https://doi.org/10.5281/zenodo.19285755)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23505994.svg)](https://doi.org/10.5281/zenodo.23505994)
 
 If you utilize these scripts or the BLS12-479+ curve parameters in your research,
 please cite the associated archive:
