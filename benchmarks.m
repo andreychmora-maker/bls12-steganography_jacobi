@@ -40,7 +40,7 @@ function RunBenchmark(p_val, iterations)
 
     DummyPrj := [Fp!0, Fp!0, Fp!0];
 
-    // Birational Mappings: Exact Homogeneous Hisil Coordinates
+    // Birational Mappings: Exact Homogeneous Hişil Coordinates
     W2J := function(P)
         if P eq E_isog!0 then return [Fp!0, Fp!1, Fp!1]; end if;
         x := P[1]; y := P[2];
