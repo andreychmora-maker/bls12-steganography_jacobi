@@ -65,7 +65,7 @@ function RunBenchmark(p_val, iterations)
         Result[2]:=2*C*G-Result[3];
         return Result;
     end function;
-/*
+
     UnifiedAddJq_Prj := function(Result, d, a_2, PrjPoint1, PrjPoint2)
         X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
         X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; Z_2:=PrjPoint2[3];
@@ -79,7 +79,7 @@ function RunBenchmark(p_val, iterations)
         Result[3]:=2*M;
         return Result;
     end function;
-*/
+
     NAF := function(Scalar)
         ArrayNAF := [];
         Tmp := Scalar;
