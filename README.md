@@ -39,7 +39,7 @@ To run the scripts, you need the Magma Computer Algebra System installed. Run th
 
 ```bash
 # Run the standalone benchmarks for both curves
-magma benchmarks.m
+magma benchmarks++.m
 
 # Run the detailed pipeline tests
 magma bls12_479_g1_jacobi.m
