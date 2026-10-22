@@ -31,7 +31,7 @@ Benchmarking 100,000 deterministic iterations reveals that our strictly projecti
 
 * `bls12_479_g1_jacobi.m`: The full end-to-end obfuscation and deobfuscation pipeline test for the 479-bit target curve. Includes runtime verification of the logic and base clock-cycle benchmarking.
 * `bls12_539_g1_jacobi.m`: The identical pipeline adapted for the ultra-high-security 539-bit target curve.
-* `benchmarks.m`: A standalone performance script designed to run headless. It evaluates 100,000 deterministic iterations for both curves to output clean CPU clock-cycle metrics.
+* `benchmarks++.m`: A standalone performance script designed to run headless. It evaluates 100,000 deterministic iterations for both curves to output clean CPU clock-cycle metrics.
 
 ## Usage
 
