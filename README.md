@@ -22,8 +22,8 @@ Benchmarking 100,000 deterministic iterations reveals that our strictly projecti
 | Curve Variant | Coordinate Space | Obfuscation (Cycles) | Deobfuscation (Cycles) |
 | :--- | :--- | :--- | :--- |
 | **BLS12-381** (Native) | Weierstrass (Mixed) | 26,432,936 | 2,666,708 |
-| **BLS12-479+** (Interpreted) | **Jacobi Quartic ($\mathcal{P}$)** | **21,088,209** | **2,632,178** |
-| **BLS12-539+** (Interpreted) | **Jacobi Quartic ($\mathcal{P}$)** | **25,758,478** | **3,060,789** |
+| **BLS12-479+** (Interpreted) | **Jacobi Qrt. ($\mathcal{P}$)** | **21,088,209** | **2,632,178** |
+| **BLS12-539+** (Interpreted) | **Jacobi Qrt. ($\mathcal{P}$)** | **25,758,478** | **3,060,789** |
 
 *(Benchmarks executed on a 2.7 GHz Quad-Core Intel Core i7, 16GB RAM)*
 
