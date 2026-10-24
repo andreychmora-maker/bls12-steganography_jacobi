@@ -60,7 +60,7 @@ If you utilize these scripts or the BLS12-479+ curve parameters in your research
 please cite the associated archive:
 
 ```bash
-@misc{chmora2026bls12steganography,
+@misc{chmora2026bls12jacobisteganography,
   author       = {Andrey Chmora},
   title        = {Optimizing Elligator Squared for BLS Curves: A Jacobi Quartic Approach},
   month        = {Oct},
