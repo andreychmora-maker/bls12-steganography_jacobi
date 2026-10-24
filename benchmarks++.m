@@ -1,18 +1,17 @@
 /* 
 ===========================================================================
 Standalone Benchmark Script for BLS12-479+ and BLS12-539+ Jacobi Pipelines 
-Features: Pure Algebraic Cycle Counter (wNAF + On-the-fly Normalization)
+Features: Pure Algebraic Cycle Counter (wNAF + Montgomery Batch Inversion)
 ===========================================================================
 */
 
-function RunBenchmark(p_val, blinding_bits, clearing_bits, iterations)
+RunBenchmark := function(p_val, blinding_bits, clearing_bits, iterations)
     Fp := FiniteField(p_val);
     
-    // We use d=1 for strict compliance with your 9M+5S formula
+    // We use d=1 for strict compliance with your 9M+5S (now 8M+5S) formula
     a_2 := Fp!12345; 
     DummyPrj := [Fp!0, Fp!0, Fp!0]; 
     
-    // Addition formulas for P(1,1,1) from your code
     DedicatedDblJq_Prj := function(Dummy, a_2_val, PrjPoint)
         X_1:=PrjPoint[1]; Y_1:=PrjPoint[2]; Z_1:=PrjPoint[3];
         A:=2*Z_1^2; B:=X_1^2; C:=Y_1^2; E:=2*X_1*Y_1; 
@@ -29,57 +28,9 @@ function RunBenchmark(p_val, blinding_bits, clearing_bits, iterations)
         L:=H-J; M:=L^2; N:=(A+L)^2-H-M; P:=(A+C)^2-H-J;
         return [D*N, 2*A*(B+a_2_val*C)*(H+J)+2*P*(F+G), 2*M];
     end function;
-/*
-    // Ultra-fast addition (9M+5S), requiring Z2=1
+
+    // Accelerated addition (8M+5S) using the Karatsuba trick. Requires Z_2=1
     DedicatedAddJq_Prj := function(Dummy, a_2_val, PrjPoint1, PrjPoint2)
-        X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
-        X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; 
-        A:=Z_1; B:=Y_1*Y_2; C:=X_1*X_2;
-        D:=X_1*Y_2 - X_2*Y_1; F:=X_1^2; G:=(Z_1*X_2)^2;
-        return [D*(F-G), (B-a_2_val*C)*(F+G)-2*C*(A^2+C^2), A*D^2];
-    end function;
-
-    NAF_w := procedure(~ArrayNAF, Scalar, w)
-        Rise2_w := 2^w; 
-        Rise2_wP1 := 2^(w+1);
-        Tmp := Scalar;
-        while Tmp gt 0 do
-           if IsOdd(Tmp) then
-              Val := Tmp mod Rise2_wP1;
-              if Val ge Rise2_w then Val -:= Rise2_wP1; end if;
-              Tmp -:= Val;
-           else
-              Val := 0;
-           end if;
-           Append(~ArrayNAF, Val);
-           Tmp div:= 2;
-        end while;
-    end procedure;
-
-    CreateLookUpTable_wNAF := function(DummyPrj, a_2_val, w, PrjPoint)
-        Rise2_w := 2^w;
-        Table := [];
-        for i in [1..Rise2_w] do Append(~Table, DummyPrj); end for;
-        
-        Table[1] := PrjPoint; 
-        
-        // Doubling and normalization
-        P2 := DedicatedDblJq_Prj(DummyPrj, a_2_val, PrjPoint);
-        Zinv2 := P2[3]^-1;
-        P2 := [P2[1]*Zinv2, P2[2]*Zinv2, Fp!1];
-        
-        for i in [3 .. Rise2_w-1 by 2] do
-            P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2);
-            Zinv := P_next[3]^-1;
-            Table[i] := [P_next[1]*Zinv, P_next[2]*Zinv, Fp!1];
-        end for;
-
-        return Table;
-    end function;
-*/
-
-// Accelerated addition (8M+5S) using the Karatsuba trick. Requires Z_2=1
-    DedicatedAddJq_Prj_Opt := function(Dummy, a_2_val, PrjPoint1, PrjPoint2)
         X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
         X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; 
         
@@ -111,6 +62,23 @@ function RunBenchmark(p_val, blinding_bits, clearing_bits, iterations)
         return invs;
     end function;
 
+    NAF_w := procedure(~ArrayNAF, Scalar, w)
+        Rise2_w := 2^w; 
+        Rise2_wP1 := 2^(w+1);
+        Tmp := Scalar;
+        while Tmp gt 0 do
+           if IsOdd(Tmp) then
+              Val := Tmp mod Rise2_wP1;
+              if Val ge Rise2_w then Val -:= Rise2_wP1; end if;
+              Tmp -:= Val;
+           else
+              Val := 0;
+           end if;
+           Append(~ArrayNAF, Val);
+           Tmp div:= 2;
+        end while;
+    end procedure;
+
     CreateLookUpTable_wNAF := function(DummyPrj, a_2_val, w, PrjPoint)
         Rise2_w := 2^w;
         Table := [DummyPrj : i in [1..Rise2_w]];
@@ -124,7 +92,7 @@ function RunBenchmark(p_val, blinding_bits, clearing_bits, iterations)
         proj_Z := [];
         idx_map := [];
         for i in [3 .. Rise2_w-1 by 2] do
-            P_next := DedicatedAddJq_Prj_Opt(DummyPrj, a_2_val, Table[i-2], P2_norm);
+            P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2_norm);
             Table[i] := P_next; 
             Append(~proj_Z, P_next[3]);
             Append(~idx_map, i);
@@ -141,7 +109,7 @@ function RunBenchmark(p_val, blinding_bits, clearing_bits, iterations)
 
         return Table;
     end function;
-    
+
     ScalarMulJqwNAF_Prj := function(DummyPrj, a_2_val, w, Scalar, PrjPoint)
         if Scalar eq 0 then return DummyPrj; end if;
         
@@ -189,10 +157,8 @@ function RunBenchmark(p_val, blinding_bits, clearing_bits, iterations)
         // === OBFUSCATION ===
         t := ClockCycles(); 
         R_cof_J := ScalarMulJqwNAF_Prj(DummyPrj, a_2, w_obf, BlindScalar, P_base);
-        // Emulating result normalization
         Zinv := R_cof_J[3]^-1;
         R_cof_norm := [R_cof_J[1]*Zinv, R_cof_J[2]*Zinv, Fp!1];
-        // Emulating the final addition
         P_isog_J := DedicatedAddJq_Prj(DummyPrj, a_2, P_base, R_cof_norm);
         ObfuscateCls +:= (ClockCycles() - t);
 
