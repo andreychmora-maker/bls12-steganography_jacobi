@@ -2,7 +2,7 @@
 ===========================================================================
 Standalone Microbenchmark: Native Intrinsic (k*P) vs Interpreted Jacobi wNAF
 Curve Target: BLS12-479+
-Features: Karatsuba Addition (8M+5S) & Montgomery Batch Inversion
+Features: Karatsuba Addition (8M+5S) & Hybrid Table Generation
 ===========================================================================
 */
 
@@ -85,24 +85,31 @@ CreateLookUpTable_wNAF := function(DummyPrj, a_2_val, w, PrjPoint)
     Zinv2 := P2[3]^-1;
     P2_norm := [P2[1]*Zinv2, P2[2]*Zinv2, Fp!1];
     
-    proj_Z := [];
-    idx_map := [];
-    
-    // Populate using fast dedicated addition (no intermediate inversions)
-    for i in [3 .. Rise2_w-1 by 2] do
-        P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2_norm);
-        Table[i] := P_next; 
-        Append(~proj_Z, P_next[3]);
-        Append(~idx_map, i);
-    end for;
-
-    // Batch normalization
-    if #proj_Z gt 0 then
-        Z_invs := BatchInvert(proj_Z);
-        for k in [1..#idx_map] do
-            i := idx_map[k];
-            Table[i] := [Table[i][1]*Z_invs[k], Table[i][2]*Z_invs[k], Fp!1];
+    if w le 2 then
+        // Прямая инверсия для коротких скаляров
+        for i in [3 .. Rise2_w-1 by 2] do
+            P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2_norm);
+            Zinv := P_next[3]^-1;
+            Table[i] := [P_next[1]*Zinv, P_next[2]*Zinv, Fp!1];
         end for;
+    else
+        // Montgomery Batch Inversion для длинных скаляров
+        proj_Z := [];
+        idx_map := [];
+        for i in [3 .. Rise2_w-1 by 2] do
+            P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2_norm);
+            Table[i] := P_next; 
+            Append(~proj_Z, P_next[3]);
+            Append(~idx_map, i);
+        end for;
+
+        if #proj_Z gt 0 then
+            Z_invs := BatchInvert(proj_Z);
+            for k in [1..#idx_map] do
+                i := idx_map[k];
+                Table[i] := [Table[i][1]*Z_invs[k], Table[i][2]*Z_invs[k], Fp!1];
+            end for;
+        end if;
     end if;
 
     return Table;
