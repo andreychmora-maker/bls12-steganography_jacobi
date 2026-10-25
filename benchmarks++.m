@@ -1,14 +1,13 @@
 /* 
 ===========================================================================
 Standalone Benchmark Script for BLS12-479+ and BLS12-539+ Jacobi Pipelines 
-Features: Pure Algebraic Cycle Counter (wNAF + Montgomery Batch Inversion)
+Features: Karatsuba Addition (8M+5S) + Hybrid Table Generation
 ===========================================================================
 */
 
 RunBenchmark := function(p_val, blinding_bits, clearing_bits, iterations)
     Fp := FiniteField(p_val);
     
-    // We use d=1 for strict compliance with your 9M+5S (now 8M+5S) formula
     a_2 := Fp!12345; 
     DummyPrj := [Fp!0, Fp!0, Fp!0]; 
     
@@ -33,17 +32,12 @@ RunBenchmark := function(p_val, blinding_bits, clearing_bits, iterations)
     DedicatedAddJq_Prj := function(Dummy, a_2_val, PrjPoint1, PrjPoint2)
         X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
         X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; 
-        
         A := Z_1; B := Y_1*Y_2; C := X_1*X_2;
-        
-        // Karatsuba trick: costs 1M instead of 2M
         D := (X_1 - Y_1)*(X_2 + Y_2) - C + B; 
         F := X_1^2; G := (Z_1*X_2)^2;
-        
         return [D*(F-G), (B-a_2_val*C)*(F+G)-2*C*(A^2+C^2), A*D^2];
     end function;
 
-    // Auxiliary function for simultaneous modular inversion (Montgomery Batch Inversion)
     BatchInvert := function(elements)
         n := #elements;
         if n eq 0 then return []; end if;
@@ -88,25 +82,30 @@ RunBenchmark := function(p_val, blinding_bits, clearing_bits, iterations)
         Zinv2 := P2[3]^-1;
         P2_norm := [P2[1]*Zinv2, P2[2]*Zinv2, Fp!1];
         
-        // 1. Accumulate projective points without intermediate inversions
-        proj_Z := [];
-        idx_map := [];
-        for i in [3 .. Rise2_w-1 by 2] do
-            P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2_norm);
-            Table[i] := P_next; 
-            Append(~proj_Z, P_next[3]);
-            Append(~idx_map, i);
-        end for;
-
-        // 2. Batch normalization (Montgomery Batch Inversion)
-        if #proj_Z gt 0 then
-            Z_invs := BatchInvert(proj_Z);
-            for k in [1..#idx_map] do
-                i := idx_map[k];
-                Table[i] := [Table[i][1]*Z_invs[k], Table[i][2]*Z_invs[k], Fp!1];
+        if w le 2 then
+            for i in [3 .. Rise2_w-1 by 2] do
+                P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2_norm);
+                Zinv := P_next[3]^-1;
+                Table[i] := [P_next[1]*Zinv, P_next[2]*Zinv, Fp!1];
             end for;
-        end if;
+        else
+            proj_Z := [];
+            idx_map := [];
+            for i in [3 .. Rise2_w-1 by 2] do
+                P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2_norm);
+                Table[i] := P_next; 
+                Append(~proj_Z, P_next[3]);
+                Append(~idx_map, i);
+            end for;
 
+            if #proj_Z gt 0 then
+                Z_invs := BatchInvert(proj_Z);
+                for k in [1..#idx_map] do
+                    i := idx_map[k];
+                    Table[i] := [Table[i][1]*Z_invs[k], Table[i][2]*Z_invs[k], Fp!1];
+                end for;
+            end if;
+        end if;
         return Table;
     end function;
 
@@ -145,7 +144,6 @@ RunBenchmark := function(p_val, blinding_bits, clearing_bits, iterations)
     ObfuscateCls := 0; 
     DeObfuscateCls := 0; 
 
-    // Dummy base points to load the Jacobi arithmetic
     P_base := [Fp!123, Fp!456, Fp!1]; 
     P_u := [Fp!789, Fp!101, Fp!1];
     P_v := [Fp!112, Fp!131, Fp!1];
@@ -154,7 +152,6 @@ RunBenchmark := function(p_val, blinding_bits, clearing_bits, iterations)
     FastCofactor := Random(2^(clearing_bits-1), 2^clearing_bits - 1);
 
     for i in [1..iterations] do
-        // === OBFUSCATION ===
         t := ClockCycles(); 
         R_cof_J := ScalarMulJqwNAF_Prj(DummyPrj, a_2, w_obf, BlindScalar, P_base);
         Zinv := R_cof_J[3]^-1;
@@ -162,7 +159,6 @@ RunBenchmark := function(p_val, blinding_bits, clearing_bits, iterations)
         P_isog_J := DedicatedAddJq_Prj(DummyPrj, a_2, P_base, R_cof_norm);
         ObfuscateCls +:= (ClockCycles() - t);
 
-        // === DEOBFUSCATION ===
         t := ClockCycles(); 
         P_sum_J := DedicatedAddJq_Prj(DummyPrj, a_2, P_u, P_v);
         ZinvSum := P_sum_J[3]^-1;
