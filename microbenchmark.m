@@ -2,6 +2,7 @@
 ===========================================================================
 Standalone Microbenchmark: Native Intrinsic (k*P) vs Interpreted Jacobi wNAF
 Curve Target: BLS12-479+
+Features: Karatsuba Addition (8M+5S) & Montgomery Batch Inversion
 ===========================================================================
 */
 
@@ -25,12 +26,37 @@ DedicatedDblJq_Prj := function(Dummy, a_2_val, PrjPoint)
     return [E*H, 2*C*G - H^2, H^2];
 end function;
 
+// Accelerated addition (8M+5S) using the Karatsuba trick. Requires Z_2=1
 DedicatedAddJq_Prj := function(Dummy, a_2_val, PrjPoint1, PrjPoint2)
     X_1:=PrjPoint1[1]; Y_1:=PrjPoint1[2]; Z_1:=PrjPoint1[3];
-    X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; // Z_2 is strictly 1 here
-    A:=Z_1; B:=Y_1*Y_2; C:=X_1*X_2;
-    D:=X_1*Y_2 - X_2*Y_1; F:=X_1^2; G:=(Z_1*X_2)^2;
+    X_2:=PrjPoint2[1]; Y_2:=PrjPoint2[2]; 
+    
+    A := Z_1; B := Y_1*Y_2; C := X_1*X_2;
+    
+    // Karatsuba trick: costs 1M instead of 2M
+    D := (X_1 - Y_1)*(X_2 + Y_2) - C + B; 
+    F := X_1^2; G := (Z_1*X_2)^2;
+    
     return [D*(F-G), (B-a_2_val*C)*(F+G)-2*C*(A^2+C^2), A*D^2];
+end function;
+
+// Auxiliary function for simultaneous modular inversion
+BatchInvert := function(elements)
+    n := #elements;
+    if n eq 0 then return []; end if;
+    Fp_loc := Parent(elements[1]);
+    prods := [Fp_loc!1 : i in [1..n]];
+    prods[1] := elements[1];
+    for i in [2..n] do prods[i] := prods[i-1] * elements[i]; end for;
+    
+    inv := prods[n]^-1;
+    invs := [Fp_loc!1 : i in [1..n]];
+    for i in [n .. 2 by -1] do
+        invs[i] := prods[i-1] * inv;
+        inv := inv * elements[i];
+    end for;
+    invs[1] := inv;
+    return invs;
 end function;
 
 NAF_w := procedure(~ArrayNAF, Scalar, w)
@@ -52,22 +78,33 @@ end procedure;
 
 CreateLookUpTable_wNAF := function(DummyPrj, a_2_val, w, PrjPoint)
     Rise2_w := 2^w;
-    Table := [];
-    for i in [1..Rise2_w] do Append(~Table, DummyPrj); end for;
-    
+    Table := [DummyPrj : i in [1..Rise2_w]];
     Table[1] := PrjPoint; 
     
-    // Compute P2 and normalize it on the fly (Z=1)
     P2 := DedicatedDblJq_Prj(DummyPrj, a_2_val, PrjPoint);
     Zinv2 := P2[3]^-1;
-    P2 := [P2[1]*Zinv2, P2[2]*Zinv2, Fp!1];
+    P2_norm := [P2[1]*Zinv2, P2[2]*Zinv2, Fp!1];
     
-    // Populate the remainder of the table using fast dedicated addition
+    proj_Z := [];
+    idx_map := [];
+    
+    // Populate using fast dedicated addition (no intermediate inversions)
     for i in [3 .. Rise2_w-1 by 2] do
-        P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2);
-        Zinv := P_next[3]^-1;
-        Table[i] := [P_next[1]*Zinv, P_next[2]*Zinv, Fp!1];
+        P_next := DedicatedAddJq_Prj(DummyPrj, a_2_val, Table[i-2], P2_norm);
+        Table[i] := P_next; 
+        Append(~proj_Z, P_next[3]);
+        Append(~idx_map, i);
     end for;
+
+    // Batch normalization
+    if #proj_Z gt 0 then
+        Z_invs := BatchInvert(proj_Z);
+        for k in [1..#idx_map] do
+            i := idx_map[k];
+            Table[i] := [Table[i][1]*Z_invs[k], Table[i][2]*Z_invs[k], Fp!1];
+        end for;
+    end if;
+
     return Table;
 end function;
 
