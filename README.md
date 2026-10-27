@@ -28,8 +28,8 @@ To isolate algorithmic density, a standalone microbenchmark of the scalar multip
 | **BLS12-381** (Native) | Variable-Time | 26,432,936 | 2,666,708 |
 | **BLS12-479+** (Interpreted) | **High-Throughput ($w\text{NAF}$)** | **15,631,763** | **2,967,201** |
 | **BLS12-539+** (Interpreted) | **High-Throughput ($w\text{NAF}$)** | **18,267,649** | **3,160,216** |
-| **BLS12-479+** (Interpreted) | **SPA-Resistant (Mont. Ladder)** | 34,516,524 | 5,782,380 |
-| **BLS12-539+** (Interpreted) | **SPA-Resistant (Mont. Ladder)** | 40,939,151 | 6,084,008 |
+| **BLS12-479+** (Interpreted) | **SPA-Resistant (Montgomery Ladder)** | 34,516,524 | 5,782,380 |
+| **BLS12-539+** (Interpreted) | **SPA-Resistant (Montgomery Ladder)** | 40,939,151 | 6,084,008 |
 
 *(Benchmarks executed on a 2.7 GHz Quad-Core Intel Core i7, 16GB RAM)*
 
