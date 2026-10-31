@@ -63,7 +63,7 @@ magma bls12_539_g1_jacobi.m
 If you utilize these scripts or the BLS12-479+ curve parameters in your research,
 please cite the associated archive:
 
-```bash
+```bibtex
 @misc{chmora2026bls12jacobisteganography,
   author       = {Andrey Chmora},
   title        = {Optimizing Elligator Squared for BLS Curves: A Jacobi Quartic Approach},
@@ -72,4 +72,4 @@ please cite the associated archive:
   publisher    = {Zenodo},
   doi          = 10.5281/zenodo.23536594
   url          = [https://zenodo.org/badge/DOI/10.5281/zenodo.23536594.svg](https://doi.org/10.5281/zenodo.23536594)
-```
+}
