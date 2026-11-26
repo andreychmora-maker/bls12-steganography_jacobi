@@ -71,5 +71,5 @@ please cite the associated archive:
   year         = {2026},
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.23536594},
-  url          = [https://zenodo.org/badge/DOI/10.5281/zenodo.23536594.svg](https://doi.org/10.5281/zenodo.23536594)
+  url          = {https://doi.org/10.5281/zenodo.23536594}
 }
